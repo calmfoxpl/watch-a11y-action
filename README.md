@@ -1,23 +1,26 @@
-# Calmfox Watch – kontrola dostępności w GitHub Actions
+# Calmfox Watch – accessibility check for GitHub Actions
 
-Po wdrożeniu sprawdza dostępność cyfrową (WCAG, poziom A albo AA) wybranych podstron
-i przerywa build, gdy wynik spadnie poniżej progu albo pojawi się **nowy** problem krytyczny.
-Wynik i tabela najważniejszych problemów lądują w podsumowaniu joba; szczegóły i instrukcje
-naprawy są w panelu.
+**English** · [Polski](README.pl.md)
 
-Wymaga modułu **Dostępność cyfrowa** (Dostępność Pro albo pakiet Complete).
+Runs a digital accessibility check (WCAG, level A or AA) on selected pages of your website
+after each deployment, and fails the build when the score drops below your threshold or a
+**new** critical issue appears. The score and a table of the most important issues go to the
+job summary; details and fix instructions are in the [Calmfox Watch](https://watch.calmfox.net)
+panel.
 
-## Klucze
+Requires the **digital accessibility** module (Accessibility Pro add-on or the Complete plan).
 
-W panelu: **Integracje → Po wdrożeniu → Włącz webhook**. Dostaniesz token strony i sekret
-(sekret pokazujemy raz). Zapisz oba w repozytorium jako sekrety Actions:
-`CALMFOX_WATCH_TOKEN` i `CALMFOX_WATCH_SECRET`. To te same klucze, co przy webhooku
-wdrożeniowym — jeśli już go używasz, wystarczy dodać token.
+## Keys
 
-## Przykład
+In the panel go to **Integrations → Releases** and turn on the release address. You get a site
+token and a secret (the secret is shown only once). Store both in your repository as Actions
+secrets: `CALMFOX_WATCH_TOKEN` and `CALMFOX_WATCH_SECRET`. These are the same keys as for the
+release webhook — if you already use it, you only need to add the token.
+
+## Example
 
 ```yaml
-name: Wdrożenie
+name: Deploy
 on:
   push:
     branches: [main]
@@ -27,9 +30,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # … Twoje kroki wdrożenia …
+      # … your deployment steps …
 
-      - name: Dostępność cyfrowa
+      - name: Digital accessibility
         id: a11y
         uses: calmfoxpl/watch-a11y-action@v1
         with:
@@ -39,65 +42,71 @@ jobs:
           level: AA
           urls: |
             /
-            /koszyk
-            /kontakt
+            /cart
+            /contact
 
-      - name: Link do raportu
+      - name: Report link
         if: always()
-        run: echo "Raport: ${{ steps.a11y.outputs.report-url }}"
+        run: echo "Report: ${{ steps.a11y.outputs.report-url }}"
 ```
 
-## Wejścia
+## Inputs
 
-| Wejście | Domyślnie | Opis |
+| Input | Default | Description |
 |---|---|---|
-| `token` | — | Token strony (wymagany). |
-| `secret` | — | Sekret webhooka (wymagany). |
-| `threshold` | `80` | Minimalny wynik 0–100. |
-| `level` | `AA` | Poziom WCAG: `A` albo `AA`. |
-| `urls` | adresy z panelu | Do 10 ścieżek na domenie strony. Puste = strona główna i adresy wskazane w kreatorze dostępności. |
-| `timeout` | `300` | Ile sekund czekać na wynik. |
-| `fail-on-error` | `true` | `false` = nie przerywaj builda, gdy kontrola się nie odbyła (limit, awaria, czas). |
-| `api-url` | `https://watch.calmfox.net` | Adres usługi. |
+| `token` | — | Site token (required). |
+| `secret` | — | Release webhook secret (required). |
+| `threshold` | `80` | Minimum score, 0–100. |
+| `level` | `AA` | WCAG level: `A` or `AA`. |
+| `urls` | addresses from the panel | Up to 10 paths on the site's domain. Empty = the home page and the addresses chosen in the accessibility setup. |
+| `timeout` | `300` | How many seconds to wait for the result. |
+| `fail-on-error` | `true` | `false` = do not fail the build when the check could not run (rate limit, outage, timeout). |
+| `api-url` | `https://watch.calmfox.net` | Service address. |
 
-## Wyjścia
+## Outputs
 
 `score`, `passed` (`true`/`false`), `report-url`, `check-id`.
 
-## Kiedy kontrola „przechodzi”
+## When the check passes
 
-- wynik na sprawdzonych adresach ≥ `threshold`, **oraz**
-- brak nowych problemów krytycznych — takich, których panel nie zna jeszcze jako otwartych
-  ani wyciszonych.
+- the score on the checked addresses is ≥ `threshold`, **and**
+- there are no new critical issues — ones the panel does not already know as open or muted.
 
-Wynik liczymy tym samym wzorem co w panelu, ale tylko z reguł WCAG do wybranego poziomu
-(dobre praktyki i AAA nie przewracają builda), a reguły wyciszone w panelu nie odejmują
-punktów. Znane problemy krytyczne obniżają wynik, ale same nie blokują wdrożenia.
+The score uses the same formula as the panel, but counts only WCAG rules up to the chosen
+level (best practices and AAA never fail the build), and rules muted in the panel do not
+deduct points. Known critical issues lower the score but do not block a deployment on their
+own — otherwise the gate would have to be switched off on day one.
 
-Kontrola z CI **nie zmienia** stanu panelu (wykryć, wyniku, trendu) — to bramka dla
-pipeline'u. Ocena obrazków przez AI jest w niej wyłączona; testy interakcji (klawiatura,
-powiększenie, formularze) działają jak w zwykłej kontroli.
+A CI check **does not change** anything in the panel (findings, score, trend) — it is a gate
+for your pipeline. AI review of images is off in CI; interaction tests (keyboard, zoom, forms)
+run as in a regular check.
 
-## Bez GitHub Actions (curl)
+## Without GitHub Actions (curl)
+
+The same check works from any CI (GitLab, Bitbucket, Jenkins…):
 
 ```bash
 ID=$(curl -sS -X POST https://watch.calmfox.net/api/public/ci/a11y \
   -H "X-Calmfox-Hook: $CALMFOX_WATCH_TOKEN" \
   -H "X-Calmfox-Secret: $CALMFOX_WATCH_SECRET" \
   -H "Content-Type: application/json" \
-  -d '{"threshold": 80, "level": "AA", "urls": ["/", "/koszyk"]}' | jq -r .id)
+  -d '{"threshold": 80, "level": "AA", "urls": ["/", "/cart"]}' | jq -r .id)
 
 curl -sS https://watch.calmfox.net/api/public/ci/a11y/$ID \
   -H "X-Calmfox-Hook: $CALMFOX_WATCH_TOKEN" \
   -H "X-Calmfox-Secret: $CALMFOX_WATCH_SECRET"
 ```
 
-Odpowiedź stanu: `status` (`queued` → `running` → `done`/`failed`), `score`, `passed`,
-`critical`, `criticalNew`, `issues` (do 10: `rule`, `title`, `impact`, `count`, `pages`, `new`),
-`pages`, `reportUrl`. Limit: 30 kontroli na godzinę na stronę.
+Status response: `status` (`queued` → `running` → `done`/`failed`), `score`, `passed`,
+`critical`, `criticalNew`, `issues` (up to 10: `rule`, `title`, `impact`, `count`, `pages`,
+`new`), `pages`, `reportUrl`. Limit: 30 checks per hour per site.
 
-Klucze podawaj wyłącznie w nagłówkach — żądanie z kluczem w adresie dostaje 400.
+Send the keys only in headers — a request with a key in the URL gets 400.
 
-## Rozwój
+## Development
 
-Bez zależności (Node 20). Testy: `node --test integrations/github-action-a11y/index.test.js`.
+No dependencies (Node 20). Tests: `node --test index.test.js`.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

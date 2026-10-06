@@ -1,5 +1,5 @@
-name: 'Calmfox Watch – kontrola dostępności'
-description: 'Sprawdza dostępność cyfrową (WCAG) strony po wdrożeniu i przerywa build, gdy wynik spada poniżej progu.'
+name: 'Calmfox Watch accessibility check'
+description: 'Checks your website for digital accessibility (WCAG) after a deployment and fails the build when the score drops below a threshold.'
 author: 'Calmfox'
 branding:
   icon: 'eye'
@@ -7,45 +7,45 @@ branding:
 
 inputs:
   token:
-    description: 'Token strony z panelu Calmfox Watch (Integracje → Po wdrożeniu). Trzymaj w secrets.'
+    description: 'Site token from the Calmfox Watch panel (Integrations → Releases). Keep it in secrets.'
     required: true
   secret:
-    description: 'Sekret webhooka wdrożeniowego (ten sam co CALMFOX_WATCH_SECRET). Trzymaj w secrets.'
+    description: 'Release webhook secret (the same as CALMFOX_WATCH_SECRET). Keep it in secrets.'
     required: true
   threshold:
-    description: 'Minimalny wynik 0–100, przy którym kontrola przechodzi.'
+    description: 'Minimum score, 0–100, for the check to pass.'
     required: false
     default: '80'
   level:
-    description: 'Poziom WCAG, do którego liczą się reguły: A albo AA.'
+    description: 'WCAG level the rules count up to: A or AA.'
     required: false
     default: 'AA'
   urls:
-    description: 'Ścieżki do sprawdzenia (do 10), rozdzielone spacją, przecinkiem albo nową linią. Puste = adresy z kontroli strony w panelu.'
+    description: 'Paths to check (up to 10), separated by spaces, commas or new lines. Empty = the addresses of the site check in the panel.'
     required: false
     default: ''
   timeout:
-    description: 'Ile sekund najwyżej czekać na wynik.'
+    description: 'Maximum number of seconds to wait for the result.'
     required: false
     default: '300'
   fail-on-error:
-    description: 'Czy przerwać build, gdy kontroli nie udało się przeprowadzić (limit, awaria, przekroczony czas).'
+    description: 'Whether to fail the build when the check could not run (rate limit, outage, timeout).'
     required: false
     default: 'true'
   api-url:
-    description: 'Adres Calmfox Watch.'
+    description: 'Calmfox Watch address.'
     required: false
     default: 'https://watch.calmfox.net'
 
 outputs:
   score:
-    description: 'Wynik dostępności 0–100 na sprawdzonych adresach.'
+    description: 'Accessibility score, 0–100, on the checked addresses.'
   passed:
-    description: 'true, gdy wynik ≥ próg i nie ma nowych problemów krytycznych.'
+    description: 'true when the score is at least the threshold and there are no new critical issues.'
   report-url:
-    description: 'Link do ekranu Dostępność cyfrowa w panelu.'
+    description: 'Link to the digital accessibility screen in the panel.'
   check-id:
-    description: 'Identyfikator kontroli.'
+    description: 'Check identifier.'
 
 runs:
   using: 'node20'
