@@ -1,0 +1,52 @@
+name: 'Calmfox Watch – kontrola dostępności'
+description: 'Sprawdza dostępność cyfrową (WCAG) strony po wdrożeniu i przerywa build, gdy wynik spada poniżej progu.'
+author: 'Calmfox'
+branding:
+  icon: 'eye'
+  color: 'orange'
+
+inputs:
+  token:
+    description: 'Token strony z panelu Calmfox Watch (Integracje → Po wdrożeniu). Trzymaj w secrets.'
+    required: true
+  secret:
+    description: 'Sekret webhooka wdrożeniowego (ten sam co CALMFOX_WATCH_SECRET). Trzymaj w secrets.'
+    required: true
+  threshold:
+    description: 'Minimalny wynik 0–100, przy którym kontrola przechodzi.'
+    required: false
+    default: '80'
+  level:
+    description: 'Poziom WCAG, do którego liczą się reguły: A albo AA.'
+    required: false
+    default: 'AA'
+  urls:
+    description: 'Ścieżki do sprawdzenia (do 10), rozdzielone spacją, przecinkiem albo nową linią. Puste = adresy z kontroli strony w panelu.'
+    required: false
+    default: ''
+  timeout:
+    description: 'Ile sekund najwyżej czekać na wynik.'
+    required: false
+    default: '300'
+  fail-on-error:
+    description: 'Czy przerwać build, gdy kontroli nie udało się przeprowadzić (limit, awaria, przekroczony czas).'
+    required: false
+    default: 'true'
+  api-url:
+    description: 'Adres Calmfox Watch.'
+    required: false
+    default: 'https://watch.calmfox.net'
+
+outputs:
+  score:
+    description: 'Wynik dostępności 0–100 na sprawdzonych adresach.'
+  passed:
+    description: 'true, gdy wynik ≥ próg i nie ma nowych problemów krytycznych.'
+  report-url:
+    description: 'Link do ekranu Dostępność cyfrowa w panelu.'
+  check-id:
+    description: 'Identyfikator kontroli.'
+
+runs:
+  using: 'node20'
+  main: 'index.js'
